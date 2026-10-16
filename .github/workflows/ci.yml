@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build release app
+        run: swift build -c release
+      - name: Run tests
+        run: |
+          framework_dir=/Library/Developer/CommandLineTools/Library/Developer/Frameworks
+          if [ ! -d "$framework_dir" ]; then
+            framework_dir="$(xcode-select -p)/Library/Developer/Frameworks"
+          fi
+          swift test --enable-swift-testing -Xswiftc -F -Xswiftc "$framework_dir"

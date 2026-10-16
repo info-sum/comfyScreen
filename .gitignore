@@ -1,0 +1,5 @@
+.build/
+.swiftpm/
+logs/
+.DS_Store
+.omo/
