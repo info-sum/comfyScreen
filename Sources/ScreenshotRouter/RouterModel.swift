@@ -103,7 +103,6 @@ final class RouterModel: ObservableObject {
         do {
             let saved = try CaptureFiles.save(capture.url, to: destination.url)
             watcher?.ignore(saved)
-            copyToClipboard(saved)
             let parent = capture.url.deletingLastPathComponent()
             if parent != pendingDirectory { _ = rmdir(parent.path) }
             pending.removeFirst()
@@ -210,10 +209,11 @@ final class RouterModel: ObservableObject {
         guard let image = NSImage(contentsOf: url),
               let tiff = image.tiffRepresentation,
               let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) else { return }
+        // Image only. A plain-text path alongside the PNG makes text-first apps
+        // (Kiro chat, terminal agents, plain text fields) paste the path instead.
         let clipboard = NSPasteboard.general
-        clipboard.declareTypes([.png, .string], owner: nil)
+        clipboard.declareTypes([.png], owner: nil)
         clipboard.setData(png, forType: .png)
-        clipboard.setString(url.path, forType: .string)
     }
 
     private func startCaptureShortcutIfAllowed() {
