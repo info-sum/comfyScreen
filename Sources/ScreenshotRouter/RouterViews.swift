@@ -210,10 +210,10 @@ private struct SaveView: View {
 
     var body: some View {
         Group {
-            if let capture = model.pending.first, let image = NSImage(contentsOf: capture.url) {
+            if let capture = model.pending.first, let image = model.preview {
                 HStack(spacing: 16) {
                     PreviewWell(image: image, filename: capture.filename, model: model)
-                    DestinationRail(model: model)
+                    DestinationRail(model: model, fileExtension: capture.url.pathExtension.lowercased())
                         .frame(width: 264)
                 }
             } else {
@@ -250,11 +250,31 @@ private struct PreviewWell: View {
 
 private struct DestinationRail: View {
     @ObservedObject var model: RouterModel
+    let fileExtension: String
+    @FocusState private var nameFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(model.text("스크린샷 저장", "Save screenshot"))
                 .font(.title2.weight(.semibold))
+
+            HStack(spacing: 2) {
+                TextField(text: $model.fileName, prompt: Text(model.defaultFileName)) {
+                    Text(model.text("파일 이름", "File name"))
+                }
+                .textFieldStyle(.plain)
+                .focused($nameFocused)
+                Text(".\(fileExtension)")
+                    .foregroundStyle(.secondary)
+            }
+            .font(.callout)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(nameFocused ? Color.accentColor : .clear, lineWidth: 1.5)
+            }
 
             if model.destinations.isEmpty {
                 ContentUnavailableView {
@@ -283,7 +303,7 @@ private struct DestinationRail: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Text(model.text("⌘1–9로 바로 저장 · Esc로 닫기", "⌘1–9 to save · Esc to close"))
+            Text(model.text("Return으로 저장 · ⌘1–9로 바로 저장 · Esc로 닫기", "Return to save · ⌘1–9 to save to a folder · Esc to close"))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }

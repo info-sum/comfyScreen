@@ -20,7 +20,17 @@ enum RouterTab: Hashable {
 @MainActor
 final class RouterModel: ObservableObject {
     @Published var destinations: [Destination] = []
-    @Published var pending: [PendingCapture] = []
+    @Published var pending: [PendingCapture] = [] {
+        didSet {
+            // Keep the preview and the editable name in step with the capture on screen.
+            // Loading the preview once also keeps typing a name from re-reading the image on every keystroke.
+            guard pending.first?.id != oldValue.first?.id else { return }
+            preview = pending.first.flatMap { NSImage(contentsOf: $0.url) }
+            fileName = defaultFileName
+        }
+    }
+    @Published private(set) var preview: NSImage?
+    @Published var fileName = ""
     @Published var selection: UUID?
     @Published var error: String?
     @Published var language: AppLanguage
@@ -88,6 +98,7 @@ final class RouterModel: ObservableObject {
     }
 
     var selectedDestination: Destination? { destinations.first { $0.id == selection } }
+    var defaultFileName: String { pending.first.map { CaptureFiles.defaultName(for: $0.discovered) } ?? "" }
     var canSave: Bool { !pending.isEmpty && selectedDestination?.writable == true }
     var needsInitialSetup: Bool { !isolated && !UserDefaults.standard.bool(forKey: setupCompletedKey) }
     func text(_ korean: String, _ english: String) -> String { language == .korean ? korean : english }
@@ -100,8 +111,10 @@ final class RouterModel: ObservableObject {
     func save(to destination: Destination? = nil) {
         guard let capture = pending.first, let destination = destination ?? selectedDestination else { return }
         selection = destination.id
+        // End text editing first so input still being composed (such as a Hangul syllable) is part of the name.
+        routerWindow?.makeFirstResponder(nil)
         do {
-            let saved = try CaptureFiles.save(capture.url, to: destination.url)
+            let saved = try CaptureFiles.save(capture.url, to: destination.url, name: fileName, date: capture.discovered)
             watcher?.ignore(saved)
             let parent = capture.url.deletingLastPathComponent()
             if parent != pendingDirectory { _ = rmdir(parent.path) }
@@ -109,6 +122,11 @@ final class RouterModel: ObservableObject {
             error = nil
             if pending.isEmpty { routerWindow?.orderOut(nil) }
         } catch { self.error = "Save failed: \(error.localizedDescription). Your screenshot is still pending; choose another folder or retry." }
+    }
+
+    func copyCapture() {
+        guard let capture = pending.first else { return }
+        copyToClipboard(capture.url)
     }
 
     func captureArea() {
@@ -224,6 +242,8 @@ final class RouterModel: ObservableObject {
     }
 
     private func replacePending(with url: URL) {
+        // A new capture starts with the name field unfocused, so ⌘C copies the image rather than the name.
+        routerWindow?.makeFirstResponder(nil)
         discardPending()
         copyToClipboard(url)
         pending = [PendingCapture(url: url, discovered: Date())]

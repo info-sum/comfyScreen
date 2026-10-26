@@ -62,7 +62,9 @@ curl -fsSL https://raw.githubusercontent.com/info-sum/comfyScreen/main/scripts/i
    - 메뉴 막대의 카메라 아이콘을 누르고 **영역 캡처…**를 선택합니다.
    - `Command + Shift + 4`를 누릅니다. 이 방법은 손쉬운 사용 권한이 필요합니다.
 2. 캡처할 영역을 드래그합니다.
-3. ScreenshotRouter 창이 나타나면 원하는 저장 폴더를 클릭합니다.
+3. ScreenshotRouter 창이 나타나면 필요할 때 파일 이름을 바꾸고, 원하는 저장 폴더를 클릭합니다.
+
+파일 이름 칸에는 `스크린샷_날짜_시간`이 들어 있습니다. 이름을 바꾸려면 칸을 클릭해 수정하세요. 확장자(`.png`)는 자동으로 붙습니다. 이름을 비우면 기본 이름으로 저장되고, `/`와 `:`는 `-`로 바뀝니다.
 
 저장 폴더는 다음 방법으로도 선택할 수 있습니다.
 
@@ -76,6 +78,8 @@ curl -fsSL https://raw.githubusercontent.com/info-sum/comfyScreen/main/scripts/i
 ### 클립보드
 
 캡처 이미지는 캡처 직후 PNG 이미지로 클립보드에 복사됩니다. 파일 경로는 함께 복사하지 않으므로 `Command + V`로 붙여넣으면 이미지만 들어갑니다.
+
+ScreenshotRouter 창에서 `Command + C`를 누르면 캡처 이미지를 다시 복사합니다. 파일 이름을 수정하는 중에는 일반 텍스트 복사로 동작합니다.
 
 대부분의 터미널은 이미지를 붙여넣지 못해서 `Command + V`로는 아무것도 입력되지 않습니다. 터미널에서 실행하는 AI 도구에 이미지를 첨부하려면 도구의 이미지 붙여넣기 단축키를 사용하세요. Codex CLI와 Claude Code에서는 `Control + V`입니다.
 
