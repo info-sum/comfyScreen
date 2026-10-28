@@ -1,3 +1,10 @@
+//
+//  RouterModel.swift
+//  ScreenshotRouter
+//
+//  설명: 스크린샷 라우팅 상태, 저장 폴더 목록, 권한 및 캡처 동작을 관리하는 중앙 모델입니다.
+//
+
 import SwiftUI
 import AppKit
 import Darwin
@@ -32,6 +39,7 @@ final class RouterModel: ObservableObject {
     @Published private(set) var preview: NSImage?
     @Published var fileName = ""
     @Published var selection: UUID?
+    @Published var addChosenFolderToDestinations = false
     @Published var error: String?
     @Published var language: AppLanguage
     @Published var activeTab: RouterTab = .save
@@ -46,23 +54,31 @@ final class RouterModel: ObservableObject {
     private var routerWindow: NSWindow?
     private let setupCompletedKey = "ScreenshotRouter.setupCompleted"
 
-    init() {
+    init(
+        watchDirectory: URL? = nil,
+        pendingDirectory: URL? = nil,
+        isolatedDestinations: [Destination]? = nil
+    ) {
         let environment = ProcessInfo.processInfo.environment
-        isolated = environment["SCREENSHOT_ROUTER_DESTINATIONS"] != nil
+        isolated = isolatedDestinations != nil || environment["SCREENSHOT_ROUTER_DESTINATIONS"] != nil
         accessibilityPermissionGranted = AXIsProcessTrusted()
         screenRecordingPermissionGranted = CGPreflightScreenCaptureAccess()
         language = AppLanguage(rawValue: UserDefaults.standard.string(forKey: "ScreenshotRouter.language") ?? "")
             ?? (Locale.preferredLanguages.first?.hasPrefix("ko") == true ? .korean : .english)
-        if let override = environment["SCREENSHOT_ROUTER_WATCH_DIR"] {
-            watchDirectory = URL(fileURLWithPath: override, isDirectory: true).standardizedFileURL
+        if let watchDirectory {
+            self.watchDirectory = watchDirectory.standardizedFileURL
+        } else if let override = environment["SCREENSHOT_ROUTER_WATCH_DIR"] {
+            self.watchDirectory = URL(fileURLWithPath: override, isDirectory: true).standardizedFileURL
         } else {
             let domain = UserDefaults.standard.persistentDomain(forName: "com.apple.screencapture")
             let path = (domain?["location"] as? String) ?? "~/Desktop"
-            watchDirectory = URL(fileURLWithPath: (path as NSString).expandingTildeInPath, isDirectory: true)
+            self.watchDirectory = URL(fileURLWithPath: (path as NSString).expandingTildeInPath, isDirectory: true)
         }
-        pendingDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        self.pendingDirectory = pendingDirectory ?? FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("ScreenshotRouter/Pending", isDirectory: true)
-        if let override = environment["SCREENSHOT_ROUTER_DESTINATIONS"] {
+        if let isolatedDestinations {
+            destinations = isolatedDestinations
+        } else if let override = environment["SCREENSHOT_ROUTER_DESTINATIONS"] {
             for path in override.split(separator: ":") {
                 let destination = Destination(url: URL(fileURLWithPath: String(path), isDirectory: true))
                 if !destinations.contains(where: { $0.path == destination.path }) { destinations.append(destination) }
@@ -73,10 +89,10 @@ final class RouterModel: ObservableObject {
         }
         selection = destinations.first(where: \.writable)?.id
         do {
-            try FileManager.default.createDirectory(at: pendingDirectory, withIntermediateDirectories: true)
-            pending = try CaptureFiles.recover(in: pendingDirectory)
+            try FileManager.default.createDirectory(at: self.pendingDirectory, withIntermediateDirectories: true)
+            pending = try CaptureFiles.recover(in: self.pendingDirectory)
             discardPending()
-            let watcher = CaptureWatcher(directory: watchDirectory, pending: pendingDirectory)
+            let watcher = CaptureWatcher(directory: self.watchDirectory, pending: self.pendingDirectory)
             watcher.onCapture = { [weak self] url in
                 guard let self, !self.pending.contains(where: { $0.url == url }) else { return }
                 self.replacePending(with: url)
@@ -114,7 +130,7 @@ final class RouterModel: ObservableObject {
         save(toFolder: destination.url)
     }
 
-    /// Saves the capture on screen to a folder picked in a panel. The folder is not added to the destinations.
+    /// 폴더 선택 창에서 고른 폴더에 현재 캡처를 저장하며, 옵션이 켜져 있으면 저장 폴더 목록에도 바로 추가합니다.
     func saveToChosenFolder() {
         guard let capture = pending.first else { return }
         // Commit the name being typed, including a syllable still being composed, before the panel takes focus.
@@ -126,14 +142,35 @@ final class RouterModel: ObservableObject {
         panel.allowsMultipleSelection = false
         panel.prompt = text("저장", "Save")
         panel.message = text("이 스크린샷을 저장할 폴더를 선택하세요.", "Choose a folder for this screenshot.")
+
+        // 폴더 선택 창 하단에 저장 폴더 목록 즉시 추가 체크박스 부착
+        let checkbox = NSButton(
+            checkboxWithTitle: text("저장 폴더 목록에도 추가", "Also add to destination folders"),
+            target: nil,
+            action: nil
+        )
+        checkbox.state = addChosenFolderToDestinations ? .on : .off
+        checkbox.translatesAutoresizingMaskIntoConstraints = false
+        let accessory = NSView(frame: NSRect(x: 0, y: 0, width: 260, height: 32))
+        accessory.addSubview(checkbox)
+        NSLayoutConstraint.activate([
+            checkbox.leadingAnchor.constraint(equalTo: accessory.leadingAnchor, constant: 12),
+            checkbox.trailingAnchor.constraint(lessThanOrEqualTo: accessory.trailingAnchor, constant: -12),
+            checkbox.centerYAnchor.constraint(equalTo: accessory.centerYAnchor),
+            accessory.heightAnchor.constraint(greaterThanOrEqualToConstant: 32)
+        ])
+        panel.accessoryView = accessory
+        panel.isAccessoryViewDisclosed = true
+
         // A capture that arrives while the panel is open replaces this one; never save the newer one by accident.
         guard panel.runModal() == .OK, let folder = panel.url, pending.first?.id == capture.id else { return }
-        save(toFolder: folder)
+        let shouldAdd = checkbox.state == .on
+        addChosenFolderToDestinations = shouldAdd
+        save(toFolder: folder, addToDestinations: shouldAdd)
     }
 
-    /// Saves the capture on screen to `folder` under the name in the name field.
-    /// Neither the selection nor the destinations change.
-    func save(toFolder folder: URL) {
+    /// 현재 화면의 캡처를 지정된 폴더에 저장하며, `addToDestinations`가 참이면 해당 폴더를 저장 폴더 목록에도 등록합니다.
+    func save(toFolder folder: URL, addToDestinations: Bool = false) {
         guard let capture = pending.first else { return }
         // End text editing first so input still being composed (such as a Hangul syllable) is part of the name.
         routerWindow?.makeFirstResponder(nil)
@@ -142,10 +179,27 @@ final class RouterModel: ObservableObject {
             watcher?.ignore(saved)
             let parent = capture.url.deletingLastPathComponent()
             if parent != pendingDirectory { _ = rmdir(parent.path) }
+            if addToDestinations {
+                addDestination(for: folder)
+            }
             pending.removeFirst()
             error = nil
             if pending.isEmpty { routerWindow?.orderOut(nil) }
         } catch { self.error = "Save failed: \(error.localizedDescription). Your screenshot is still pending; choose another folder or retry." }
+    }
+
+    /// 전달받은 폴더 URL을 정규화하여 중복 없이 저장 폴더 목록에 추가하고 선택 상태로 지정합니다.
+    @discardableResult
+    func addDestination(for folder: URL) -> Destination {
+        let candidate = Destination(url: folder)
+        if let existing = destinations.first(where: { $0.path == candidate.path }) {
+            selection = existing.id
+            return existing
+        }
+        destinations.append(candidate)
+        selection = candidate.id
+        persist()
+        return candidate
     }
 
     func copyCapture() {

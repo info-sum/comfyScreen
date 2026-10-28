@@ -21,7 +21,7 @@ curl -fsSL https://raw.githubusercontent.com/info-sum/comfyScreen/main/scripts/i
    macOS 단축키 Command + Shift + 4로 화면을 캡처합니다.
 2. ScreenshotRouter 창이 나타나면 원하는 저장 폴더를 선택합니다.
 3. 폴더 오른쪽에 표시된 Command + 숫자 단축키로도 바로 저장할 수 있습니다.
-   목록에 없는 폴더에 저장하려면 "다른 폴더에 저장…"(Shift + Command + S)을 눌러 폴더를 고릅니다.
+   목록에 없는 폴더에 저장하려면 "다른 폴더에 저장…"(Shift + Command + S)을 눌러 폴더를 고릅니다. "저장 폴더 목록에도 추가"를 체크하면 고른 폴더를 목록에도 바로 등록할 수 있습니다.
 4. 저장 파일은 기본적으로 "스크린샷_날짜_시간.png" 형식으로 만들어집니다.
    창 위쪽 파일 이름 칸을 클릭하면 이름을 바꿔 저장할 수 있습니다.
    Return을 누르면 선택한 폴더에 저장합니다.

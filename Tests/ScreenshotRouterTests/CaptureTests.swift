@@ -1,3 +1,10 @@
+//
+//  CaptureTests.swift
+//  ScreenshotRouterTests
+//
+//  설명: 캡처 파일 필터링, 스테이징, 저장 및 폴더 목록 즉시 추가 동작을 검증하는 단위 테스트입니다.
+//
+
 import Foundation
 import Testing
 @testable import ScreenshotRouter
@@ -119,5 +126,48 @@ struct CaptureTests {
         let alias = root.appendingPathComponent("alias")
         try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: root)
         #expect(Destination(url: alias).path == Destination(url: root).path)
+    }
+
+    @Test @MainActor func saveToChosenFolderCanAddDestinationWithoutDuplicates() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let watch = root.appendingPathComponent("watch", isDirectory: true)
+        let pending = root.appendingPathComponent("pending", isDirectory: true)
+        let oneOffFolder = root.appendingPathComponent("oneOff", isDirectory: true)
+        let addedFolder = root.appendingPathComponent("added", isDirectory: true)
+        try FileManager.default.createDirectory(at: watch, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: pending, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: oneOffFolder, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: addedFolder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let model = RouterModel(watchDirectory: watch, pendingDirectory: pending, isolatedDestinations: [])
+
+        // 1. addToDestinations: false(기본값)일 때는 파일만 저장하고 저장 폴더 목록은 비어 있어야 함
+        let firstCapture = pending.appendingPathComponent("Screenshot first.png")
+        try Data("first".utf8).write(to: firstCapture)
+        model.pending = [PendingCapture(url: firstCapture, discovered: Date(timeIntervalSince1970: 10))]
+        model.save(toFolder: oneOffFolder, addToDestinations: false)
+        #expect(model.pending.isEmpty)
+        #expect(model.destinations.isEmpty)
+
+        // 2. addToDestinations: true일 때는 파일 저장과 동시에 해당 폴더가 저장 폴더 목록에 추가되고 선택되어야 함
+        let secondCapture = pending.appendingPathComponent("Screenshot second.png")
+        try Data("second".utf8).write(to: secondCapture)
+        model.pending = [PendingCapture(url: secondCapture, discovered: Date(timeIntervalSince1970: 20))]
+        model.save(toFolder: addedFolder, addToDestinations: true)
+        #expect(model.pending.isEmpty)
+        #expect(model.destinations.count == 1)
+        #expect(model.destinations.first?.path == Destination(url: addedFolder).path)
+        #expect(model.selection == model.destinations.first?.id)
+
+        // 3. 이미 등록된 폴더(또는 심볼릭 링크)에 addToDestinations: true로 다시 저장해도 중복 등록되지 않아야 함
+        let aliasFolder = root.appendingPathComponent("addedAlias")
+        try FileManager.default.createSymbolicLink(at: aliasFolder, withDestinationURL: addedFolder)
+        let thirdCapture = pending.appendingPathComponent("Screenshot third.png")
+        try Data("third".utf8).write(to: thirdCapture)
+        model.pending = [PendingCapture(url: thirdCapture, discovered: Date(timeIntervalSince1970: 30))]
+        model.save(toFolder: aliasFolder, addToDestinations: true)
+        #expect(model.pending.isEmpty)
+        #expect(model.destinations.count == 1)
     }
 }

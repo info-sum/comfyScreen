@@ -1,3 +1,10 @@
+//
+//  RouterViews.swift
+//  ScreenshotRouter
+//
+//  설명: 온보딩, 스크린샷 미리보기 및 저장 레일, 설정 화면 등 SwiftUI 뷰 구성을 정의합니다.
+//
+
 import SwiftUI
 
 struct RouterView: View {
@@ -282,8 +289,14 @@ private struct DestinationRail: View {
                 } description: {
                     Text(model.text("저장 폴더를 추가하거나, 폴더를 직접 골라 저장하세요.", "Add a destination, or pick a folder for this screenshot."))
                 } actions: {
-                    Button(model.text("폴더 추가", "Add Folder")) { model.showSettings() }
+                    Button(model.text("폴더 추가", "Add Folder")) { model.addFolder() }
                     Button(model.text("폴더 골라서 저장…", "Save to a Folder…")) { model.saveToChosenFolder() }
+                    Toggle(isOn: $model.addChosenFolderToDestinations) {
+                        Text(model.text("저장 폴더 목록에도 추가", "Also add to destination folders"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .toggleStyle(.checkbox)
                 }
             } else {
                 ScrollView {
@@ -357,36 +370,54 @@ private struct DestinationRow: View {
     }
 }
 
-/// Saves the capture to a folder picked in a panel, for folders that are not in the destinations.
+/// 목록에 없는 폴더를 직접 골라 저장하며, 옵션에 따라 저장 폴더 목록에도 바로 추가할 수 있는 행 뷰입니다.
 private struct OtherFolderRow: View {
     @ObservedObject var model: RouterModel
 
     var body: some View {
-        Button {
-            model.saveToChosenFolder()
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "folder")
-                    .foregroundStyle(Color.accentColor)
-                    .frame(width: 20)
-                Text(model.text("다른 폴더에 저장…", "Other Folder…"))
-                    .font(.subheadline.weight(.medium))
-                    .lineLimit(1)
-                Spacer(minLength: 4)
-                Text("⇧⌘S")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 4)
-                    .background(Color.primary.opacity(0.07), in: Capsule())
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                model.saveToChosenFolder()
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: model.addChosenFolderToDestinations ? "folder.badge.plus" : "folder")
+                        .foregroundStyle(Color.accentColor)
+                        .frame(width: 20)
+                    Text(model.text("다른 폴더에 저장…", "Other Folder…"))
+                        .font(.subheadline.weight(.medium))
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                    Text("⇧⌘S")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 4)
+                        .background(Color.primary.opacity(0.07), in: Capsule())
+                }
+                .contentShape(Rectangle())
             }
-            .padding(10)
-            .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .buttonStyle(.plain)
+            .help(
+                model.addChosenFolderToDestinations
+                    ? model.text("고른 폴더에 스크린샷을 저장하고 저장 폴더 목록에도 바로 추가합니다.", "Saves this screenshot to a folder you pick and adds that folder to your destinations.")
+                    : model.text("고른 폴더에 이번 스크린샷만 저장합니다. 아래 체크박스나 폴더 선택 창에서 저장 폴더 목록에 바로 추가할 수도 있습니다.", "Saves this screenshot to a folder you pick. You can also add the folder to your destinations.")
+            )
+            .accessibilityLabel(model.text("다른 폴더를 골라 저장, 단축키 Shift Command S", "Save to another folder, shortcut Shift Command S"))
+
+            Divider()
+                .opacity(0.5)
+
+            Toggle(isOn: $model.addChosenFolderToDestinations) {
+                Text(model.text("저장 폴더 목록에도 추가", "Also add to destination folders"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .toggleStyle(.checkbox)
+            .accessibilityLabel(model.text("다른 폴더에 저장할 때 저장 폴더 목록에도 바로 추가", "Also add the chosen folder to destination folders when saving"))
         }
-        .buttonStyle(.plain)
-        .help(model.text("고른 폴더에 이번 스크린샷만 저장합니다. 저장 폴더 목록에는 추가되지 않습니다.", "Saves this screenshot to a folder you pick. The folder isn't added to your destinations."))
-        .accessibilityLabel(model.text("다른 폴더를 골라 저장, 단축키 Shift Command S", "Save to another folder, shortcut Shift Command S"))
+        .padding(10)
+        .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
