@@ -8,6 +8,8 @@ ScreenshotRouter는 macOS에서 영역을 캡처한 뒤 미리 지정한 폴더�
 [![CI](https://github.com/info-sum/comfyScreen/actions/workflows/ci.yml/badge.svg)](https://github.com/info-sum/comfyScreen/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+![ScreenshotRouter 소개 영상: 캡처 직후 창이 열리고, 파일 이름을 바꾼 뒤 Command + 1로 메모 폴더에 저장합니다](Assets/intro.gif)
+
 [설치](#설치) · [사용 방법](#사용-방법) · [삭제](#삭제) · [문제 해결](#문제-해결) · [라이선스](#라이선스)
 
 ## 지원 환경
