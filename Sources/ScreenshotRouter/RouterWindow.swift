@@ -25,6 +25,10 @@ final class RouterWindow: NSWindow {
             if !event.isARepeat && model.canSave { model.save() }
             return
         }
+        if modifiers == [.command, .shift] && event.keyCode == 1 {
+            if !event.isARepeat && !model.pending.isEmpty { model.saveToChosenFolder() }
+            return
+        }
         if modifiers == .command,
            let key = event.charactersIgnoringModifiers?.lowercased(),
            let number = Int(key), (1...9).contains(number) {
@@ -42,7 +46,8 @@ final class RouterWindow: NSWindow {
     // Outside the name field it copies the capture image again instead of doing nothing.
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         let modifiers = event.modifierFlags.intersection([.command, .option, .control, .shift])
-        if modifiers == .command, event.keyCode == 8, !(firstResponder is NSText), let model, !model.pending.isEmpty {
+        // Only while this window is key: a folder panel on top keeps its own ⌘C.
+        if isKeyWindow, modifiers == .command, event.keyCode == 8, !(firstResponder is NSText), let model, !model.pending.isEmpty {
             model.copyCapture()
             return true
         }

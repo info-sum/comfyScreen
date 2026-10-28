@@ -109,12 +109,36 @@ final class RouterModel: ObservableObject {
     }
 
     func save(to destination: Destination? = nil) {
-        guard let capture = pending.first, let destination = destination ?? selectedDestination else { return }
+        guard !pending.isEmpty, let destination = destination ?? selectedDestination else { return }
         selection = destination.id
+        save(toFolder: destination.url)
+    }
+
+    /// Saves the capture on screen to a folder picked in a panel. The folder is not added to the destinations.
+    func saveToChosenFolder() {
+        guard let capture = pending.first else { return }
+        // Commit the name being typed, including a syllable still being composed, before the panel takes focus.
+        routerWindow?.makeFirstResponder(nil)
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = text("저장", "Save")
+        panel.message = text("이 스크린샷을 저장할 폴더를 선택하세요.", "Choose a folder for this screenshot.")
+        // A capture that arrives while the panel is open replaces this one; never save the newer one by accident.
+        guard panel.runModal() == .OK, let folder = panel.url, pending.first?.id == capture.id else { return }
+        save(toFolder: folder)
+    }
+
+    /// Saves the capture on screen to `folder` under the name in the name field.
+    /// Neither the selection nor the destinations change.
+    func save(toFolder folder: URL) {
+        guard let capture = pending.first else { return }
         // End text editing first so input still being composed (such as a Hangul syllable) is part of the name.
         routerWindow?.makeFirstResponder(nil)
         do {
-            let saved = try CaptureFiles.save(capture.url, to: destination.url, name: fileName, date: capture.discovered)
+            let saved = try CaptureFiles.save(capture.url, to: folder, name: fileName, date: capture.discovered)
             watcher?.ignore(saved)
             let parent = capture.url.deletingLastPathComponent()
             if parent != pendingDirectory { _ = rmdir(parent.path) }

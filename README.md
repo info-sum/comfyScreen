@@ -71,6 +71,7 @@ curl -fsSL https://raw.githubusercontent.com/info-sum/comfyScreen/main/scripts/i
 - `Command + 1`부터 `Command + 9`: 해당 순서의 폴더에 즉시 저장
 - 위쪽/아래쪽 방향키: 저장 폴더 선택 변경
 - `Return` 또는 `Command + S`: 현재 선택한 폴더에 저장
+- **다른 폴더에 저장…** 또는 `Shift + Command + S`: 목록에 없는 폴더를 직접 골라 저장. 고른 폴더는 저장 폴더 목록에 추가되지 않습니다.
 - `Escape`: 저장하지 않고 창 숨기기
 
 파일은 같은 이름의 파일을 덮어쓰지 않으며, 이름이 겹치면 번호를 붙여 저장합니다.

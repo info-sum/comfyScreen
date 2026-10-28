@@ -280,9 +280,10 @@ private struct DestinationRail: View {
                 ContentUnavailableView {
                     Label(model.text("저장 폴더 없음", "No destinations"), systemImage: "folder.badge.plus")
                 } description: {
-                    Text(model.text("먼저 저장할 폴더를 추가하세요.", "Add a folder before saving."))
+                    Text(model.text("저장 폴더를 추가하거나, 폴더를 직접 골라 저장하세요.", "Add a destination, or pick a folder for this screenshot."))
                 } actions: {
                     Button(model.text("폴더 추가", "Add Folder")) { model.showSettings() }
+                    Button(model.text("폴더 골라서 저장…", "Save to a Folder…")) { model.saveToChosenFolder() }
                 }
             } else {
                 ScrollView {
@@ -290,6 +291,7 @@ private struct DestinationRail: View {
                         ForEach(Array(model.destinations.enumerated()), id: \.element.id) { index, destination in
                             DestinationRow(destination: destination, shortcut: index + 1, model: model)
                         }
+                        OtherFolderRow(model: model)
                     }
                 }
             }
@@ -352,6 +354,39 @@ private struct DestinationRow: View {
         .opacity(destination.writable ? 1 : 0.55)
         .help(destination.path)
         .accessibilityLabel(model.text("\(destination.name)에 저장, 단축키 Command \(shortcut)", "Save to \(destination.name), shortcut Command \(shortcut)"))
+    }
+}
+
+/// Saves the capture to a folder picked in a panel, for folders that are not in the destinations.
+private struct OtherFolderRow: View {
+    @ObservedObject var model: RouterModel
+
+    var body: some View {
+        Button {
+            model.saveToChosenFolder()
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "folder")
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 20)
+                Text(model.text("다른 폴더에 저장…", "Other Folder…"))
+                    .font(.subheadline.weight(.medium))
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                Text("⇧⌘S")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 4)
+                    .background(Color.primary.opacity(0.07), in: Capsule())
+            }
+            .padding(10)
+            .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .help(model.text("고른 폴더에 이번 스크린샷만 저장합니다. 저장 폴더 목록에는 추가되지 않습니다.", "Saves this screenshot to a folder you pick. The folder isn't added to your destinations."))
+        .accessibilityLabel(model.text("다른 폴더를 골라 저장, 단축키 Shift Command S", "Save to another folder, shortcut Shift Command S"))
     }
 }
 
