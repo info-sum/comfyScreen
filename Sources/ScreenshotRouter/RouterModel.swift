@@ -20,7 +20,17 @@ enum RouterTab: Hashable {
 @MainActor
 final class RouterModel: ObservableObject {
     @Published var destinations: [Destination] = []
-    @Published var pending: [PendingCapture] = []
+    @Published var pending: [PendingCapture] = [] {
+        didSet {
+            // Keep the preview and the editable name in step with the capture on screen.
+            // Loading the preview once also keeps typing a name from re-reading the image on every keystroke.
+            guard pending.first?.id != oldValue.first?.id else { return }
+            preview = pending.first.flatMap { NSImage(contentsOf: $0.url) }
+            fileName = defaultFileName
+        }
+    }
+    @Published private(set) var preview: NSImage?
+    @Published var fileName = ""
     @Published var selection: UUID?
     @Published var error: String?
     @Published var language: AppLanguage
@@ -88,6 +98,7 @@ final class RouterModel: ObservableObject {
     }
 
     var selectedDestination: Destination? { destinations.first { $0.id == selection } }
+    var defaultFileName: String { pending.first.map { CaptureFiles.defaultName(for: $0.discovered) } ?? "" }
     var canSave: Bool { !pending.isEmpty && selectedDestination?.writable == true }
     var needsInitialSetup: Bool { !isolated && !UserDefaults.standard.bool(forKey: setupCompletedKey) }
     func text(_ korean: String, _ english: String) -> String { language == .korean ? korean : english }
@@ -98,18 +109,48 @@ final class RouterModel: ObservableObject {
     }
 
     func save(to destination: Destination? = nil) {
-        guard let capture = pending.first, let destination = destination ?? selectedDestination else { return }
+        guard !pending.isEmpty, let destination = destination ?? selectedDestination else { return }
         selection = destination.id
+        save(toFolder: destination.url)
+    }
+
+    /// Saves the capture on screen to a folder picked in a panel. The folder is not added to the destinations.
+    func saveToChosenFolder() {
+        guard let capture = pending.first else { return }
+        // Commit the name being typed, including a syllable still being composed, before the panel takes focus.
+        routerWindow?.makeFirstResponder(nil)
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = text("저장", "Save")
+        panel.message = text("이 스크린샷을 저장할 폴더를 선택하세요.", "Choose a folder for this screenshot.")
+        // A capture that arrives while the panel is open replaces this one; never save the newer one by accident.
+        guard panel.runModal() == .OK, let folder = panel.url, pending.first?.id == capture.id else { return }
+        save(toFolder: folder)
+    }
+
+    /// Saves the capture on screen to `folder` under the name in the name field.
+    /// Neither the selection nor the destinations change.
+    func save(toFolder folder: URL) {
+        guard let capture = pending.first else { return }
+        // End text editing first so input still being composed (such as a Hangul syllable) is part of the name.
+        routerWindow?.makeFirstResponder(nil)
         do {
-            let saved = try CaptureFiles.save(capture.url, to: destination.url)
+            let saved = try CaptureFiles.save(capture.url, to: folder, name: fileName, date: capture.discovered)
             watcher?.ignore(saved)
-            copyToClipboard(saved)
             let parent = capture.url.deletingLastPathComponent()
             if parent != pendingDirectory { _ = rmdir(parent.path) }
             pending.removeFirst()
             error = nil
             if pending.isEmpty { routerWindow?.orderOut(nil) }
         } catch { self.error = "Save failed: \(error.localizedDescription). Your screenshot is still pending; choose another folder or retry." }
+    }
+
+    func copyCapture() {
+        guard let capture = pending.first else { return }
+        copyToClipboard(capture.url)
     }
 
     func captureArea() {
@@ -210,10 +251,11 @@ final class RouterModel: ObservableObject {
         guard let image = NSImage(contentsOf: url),
               let tiff = image.tiffRepresentation,
               let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) else { return }
+        // Image only. A plain-text path alongside the PNG makes text-first apps
+        // (Kiro chat, terminal agents, plain text fields) paste the path instead.
         let clipboard = NSPasteboard.general
-        clipboard.declareTypes([.png, .string], owner: nil)
+        clipboard.declareTypes([.png], owner: nil)
         clipboard.setData(png, forType: .png)
-        clipboard.setString(url.path, forType: .string)
     }
 
     private func startCaptureShortcutIfAllowed() {
@@ -224,6 +266,8 @@ final class RouterModel: ObservableObject {
     }
 
     private func replacePending(with url: URL) {
+        // A new capture starts with the name field unfocused, so ⌘C copies the image rather than the name.
+        routerWindow?.makeFirstResponder(nil)
         discardPending()
         copyToClipboard(url)
         pending = [PendingCapture(url: url, discovered: Date())]

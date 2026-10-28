@@ -35,10 +35,12 @@ The common path is one decision and one action: press `Command+Shift+4` to begin
 
 - Calm, compact `main-with-rail` window, minimum 760×480. The preview is the dominant region and the destination rail is the narrow supporting region; neither region owns a nested scroll unless destination count requires it.
 - Left: aspect-fit screenshot preview in a dark, concentric media well so light screenshots remain distinct from the window.
-- Right: one elevated glass surface containing **Save screenshot**, filename, status, and destination actions.
+- Right: one elevated glass surface containing **Save screenshot**, an editable file name, status, and destination actions.
+- The file name field is prefilled with `스크린샷_yyyy-MM-dd_HH-mm-ss` from the capture time and shows the fixed extension beside it. It is not focused when a capture arrives, so ⌘C copies the image; clicking it edits the name. An empty name saves with the default; `/` and `:` become `-`, leading dots are dropped, and overlong names are shortened to fit.
 - Each destination row shows its friendly name, abbreviated path, and shortcut badge `⌘1`…`⌘9`; clicking a row saves immediately.
+- After the rows, **Other Folder…** (`⇧⌘S`) opens a folder picker and saves the capture there once. The folder is not added to the destinations and the selection does not change. If a new capture replaces this one while the picker is open, nothing is saved.
 - Selection changes immediately; the Save button is disabled when no writable destination exists.
-- Keyboard: Up/Down changes selection, Return and Command+S save to the selection, Escape hides the window without discarding the pending file, Command+1…9 saves directly.
+- Keyboard: Up/Down changes selection, Return and Command+S save to the selection, Escape hides the window without discarding the pending file, Command+1…9 saves directly, Shift+Command+S saves to a folder picked in a panel, Command+C copies the capture image unless the name is being edited.
 - Use native materials, system typography, semantic colors, clear VoiceOver labels, and no decorative animation. Feedback is immediate and predictable.
 
 ### First launch
