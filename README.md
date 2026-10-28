@@ -8,7 +8,7 @@ ScreenshotRouter는 macOS에서 영역을 캡처한 뒤 미리 지정한 폴더�
 [![CI](https://github.com/info-sum/comfyScreen/actions/workflows/ci.yml/badge.svg)](https://github.com/info-sum/comfyScreen/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-[설치](#설치) · [사용 방법](#사용-방법) · [삭제](#삭제) · [라이선스](#라이선스)
+[설치](#설치) · [사용 방법](#사용-방법) · [삭제](#삭제) · [문제 해결](#문제-해결) · [라이선스](#라이선스)
 
 ## 지원 환경
 
@@ -17,33 +17,15 @@ ScreenshotRouter는 macOS에서 영역을 캡처한 뒤 미리 지정한 폴더�
 
 ## 설치
 
-### Git으로 설치
-
-Git이 설치되어 있다면 저장소를 복제한 뒤 설치 프로그램을 실행합니다.
-
-```sh
-git clone https://github.com/info-sum/comfyScreen.git
-cd comfyScreen
-./Install\ ScreenshotRouter.command
-```
-
-### 원클릭 설치
-
-Git을 설치하지 않으려면 아래 명령을 터미널에 붙여넣으세요. 최신 `main` 브랜치를 내려받아 설치합니다.
+**터미널** 앱을 열고 아래 한 줄을 붙여넣은 뒤 `Return`을 누릅니다.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/info-sum/comfyScreen/main/scripts/install.sh | sh
 ```
 
-설치가 끝나면 ScreenshotRouter가 자동으로 실행됩니다.
+몇 초 뒤 설치가 끝나고 ScreenshotRouter가 자동으로 실행됩니다. 앱은 `~/Applications/ScreenshotRouter.app`에 설치됩니다.
 
-앱은 `~/Applications/ScreenshotRouter.app`에 설치됩니다.
-
-### macOS가 실행을 차단하는 경우
-
-1. 설치 프로그램 또는 앱을 한 번 실행합니다.
-2. **시스템 설정 > 개인정보 보호 및 보안**으로 이동합니다.
-3. 화면 아래쪽의 **확인 없이 열기**를 누른 뒤 다시 실행합니다.
+업데이트할 때도 같은 명령을 실행합니다. 설정은 그대로 유지되며, 실행 중이던 앱은 메뉴 막대에서 종료한 뒤 다시 열면 새 버전이 적용됩니다.
 
 ## 처음 설정
 
@@ -97,19 +79,29 @@ ScreenshotRouter 창에서 `Command + C`를 누르면 캡처 이미지를 다시
 
 ## 삭제
 
-1. 메뉴 막대의 카메라 아이콘을 누르고 **종료**를 선택합니다.
-2. 저장소를 복제한 폴더에서 `Uninstall ScreenshotRouter.command`를 실행합니다.
-3. 계속할지 묻는 메시지가 나타나면 `y`를 입력하고 `Return`을 누릅니다.
+터미널에 아래 한 줄을 붙여넣고, 계속할지 묻는 메시지가 나오면 `y`를 입력한 뒤 `Return`을 누릅니다.
 
-삭제 스크립트는 다음 항목을 제거합니다.
+```sh
+curl -fsSL https://raw.githubusercontent.com/info-sum/comfyScreen/main/scripts/uninstall.sh | sh
+```
+
+실행 중인 ScreenshotRouter는 자동으로 종료되며, 다음 항목이 제거됩니다.
 
 - `~/Applications/ScreenshotRouter.app`
-- ScreenshotRouter 설정 및 캐시
+- ScreenshotRouter 설정과 캐시 (저장하지 않은 캡처 포함)
 - 화면 기록 및 손쉬운 사용 권한 등록
 
-ScreenshotRouter를 사용해 저장 폴더로 옮긴 스크린샷은 삭제되지 않습니다.
+ScreenshotRouter로 저장 폴더에 저장한 스크린샷은 삭제되지 않습니다.
 
 ## 개발자용 빌드 및 테스트
+
+저장소를 복제해 설치하거나 삭제할 수도 있습니다. 저장소 폴더의 `Uninstall ScreenshotRouter.command`는 위의 삭제 명령과 같은 스크립트(`scripts/uninstall.sh`)를 실행합니다.
+
+```sh
+git clone https://github.com/info-sum/comfyScreen.git
+cd comfyScreen
+./Install\ ScreenshotRouter.command
+```
 
 CommandLineTools가 설치된 macOS에서 다음 명령으로 빌드하고 실행할 수 있습니다.
 
@@ -135,6 +127,18 @@ swift test --enable-swift-testing \
 
 저장 폴더 환경변수는 현재 실행 중인 앱의 메모리에서만 사용되며 기존 설정을 덮어쓰지 않습니다. QA 중에는 여러 앱 인스턴스를 동시에 실행하지 마세요.
 
+## 문제 해결
+
+### macOS가 실행을 차단하는 경우
+
+설치 명령을 쓰지 않고 브라우저로 내려받은 파일을 열면 개발자 서명이 없어 macOS가 실행을 막을 수 있습니다.
+
+1. 설치 프로그램 또는 앱을 한 번 실행합니다.
+2. **시스템 설정 > 개인정보 보호 및 보안**으로 이동합니다.
+3. 화면 아래쪽의 **확인 없이 열기**를 누른 뒤 다시 실행합니다.
+
+위의 설치 명령으로 설치하면 이 과정이 필요 없습니다.
+
 ## 문제를 제보할 때
 
 다음 정보를 함께 전달해 주세요.
@@ -143,8 +147,6 @@ swift test --enable-swift-testing \
 - 문제가 발생하기 직전에 한 동작
 - 화면에 표시된 메시지 또는 스크린샷
 - 사용한 저장 폴더와 단축키
-
-현재 배포본은 개발자 서명이 없는 테스트용 앱이므로 처음 실행할 때 macOS 보안 경고가 나타날 수 있습니다.
 
 ## 라이선스
 

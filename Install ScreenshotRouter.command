@@ -26,7 +26,8 @@ if ! mv "$staged_app" "$destination_app"; then
 fi
 
 rm -rf "$backup_app"
-echo "ScreenshotRouter를 $destination_app에 설치했습니다."
+# Braces matter: zsh would read "$destination_app에" as one (unset) variable name.
+echo "ScreenshotRouter를 ${destination_app}에 설치했습니다."
 
 if [[ ${SCREENSHOT_ROUTER_OPEN_AFTER_INSTALL:-1} == 1 ]]; then
   open "$destination_app"

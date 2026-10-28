@@ -5,17 +5,11 @@ ScreenshotRouter 테스트 사용법
 - macOS 14 이상
 
 [설치]
-1. 터미널에서 `git clone https://github.com/info-sum/comfyScreen.git`를 실행합니다.
-2. `cd comfyScreen`으로 이동한 뒤 `./Install\ ScreenshotRouter.command`를 실행합니다.
-3. 설치가 끝나면 ScreenshotRouter가 자동으로 실행됩니다.
+터미널 앱을 열고 아래 한 줄을 붙여넣은 뒤 Return을 누릅니다.
+curl -fsSL https://raw.githubusercontent.com/info-sum/comfyScreen/main/scripts/install.sh | sh
 
-Git을 설치하지 않으려면 아래 명령을 터미널에 붙여넣습니다.
-`curl -fsSL https://raw.githubusercontent.com/info-sum/comfyScreen/main/scripts/install.sh | sh`
-
-macOS가 실행을 차단하는 경우
-1. 설치 파일 또는 앱을 한 번 실행합니다.
-2. 시스템 설정 > 개인정보 보호 및 보안으로 이동합니다.
-3. 아래쪽의 "확인 없이 열기"를 누르고 다시 실행합니다.
+몇 초 뒤 설치가 끝나고 ScreenshotRouter가 자동으로 실행됩니다.
+업데이트할 때도 같은 명령을 실행한 뒤, 메뉴 막대에서 앱을 종료하고 다시 엽니다.
 
 [처음 설정]
 1. 스크린샷을 감지할 폴더와 저장할 폴더를 선택합니다.
@@ -41,17 +35,21 @@ macOS가 실행을 차단하는 경우
 - 종료: ScreenshotRouter 종료
 
 [완전 삭제]
-1. 메뉴 막대에서 ScreenshotRouter를 종료합니다.
-2. "Uninstall ScreenshotRouter.command"를 더블 클릭합니다.
-3. 안내가 나오면 y를 입력하고 Return 키를 누릅니다.
+터미널에 아래 한 줄을 붙여넣고, 안내가 나오면 y를 입력한 뒤 Return 키를 누릅니다.
+curl -fsSL https://raw.githubusercontent.com/info-sum/comfyScreen/main/scripts/uninstall.sh | sh
 
-설치된 앱, 앱 설정, 화면 기록·손쉬운 사용 권한이 함께 삭제됩니다.
+실행 중인 앱은 자동으로 종료되고, 설치된 앱, 앱 설정과 캐시(저장하지 않은 캡처 포함),
+화면 기록·손쉬운 사용 권한이 함께 삭제됩니다.
 ScreenshotRouter로 저장한 스크린샷은 삭제되지 않습니다.
+
+[macOS가 실행을 차단하는 경우]
+설치 명령 대신 브라우저로 내려받은 파일을 열었을 때만 해당합니다.
+1. 설치 파일 또는 앱을 한 번 실행합니다.
+2. 시스템 설정 > 개인정보 보호 및 보안으로 이동합니다.
+3. 아래쪽의 "확인 없이 열기"를 누르고 다시 실행합니다.
 
 [문제가 생기면 알려주세요]
 - 사용 중인 Mac 모델과 macOS 버전
 - 문제가 발생하기 직전에 한 동작
 - 화면에 나온 메시지 또는 스크린샷
 - 저장하려던 폴더와 사용한 Command + 숫자
-
-주의: 현재 버전은 지인 테스트용이므로 처음 실행할 때 macOS 보안 경고가 나타날 수 있습니다.
