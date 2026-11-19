@@ -207,6 +207,18 @@ final class RouterModel: ObservableObject {
         copyToClipboard(capture.url)
     }
 
+    func applyEdit(_ image: CGImage, to capture: PendingCapture) throws {
+        guard pending.first?.id == capture.id else { throw CocoaError(.fileNoSuchFile) }
+        let bitmap = NSBitmapImageRep(cgImage: image)
+        let format: NSBitmapImageRep.FileType = capture.url.pathExtension.lowercased() == "png" ? .png : .jpeg
+        let properties: [NSBitmapImageRep.PropertyKey: Any] = format == .jpeg ? [.compressionFactor: 0.95] : [:]
+        guard let data = bitmap.representation(using: format, properties: properties),
+              let editedPreview = NSImage(data: data) else { throw CocoaError(.fileWriteUnknown) }
+        try data.write(to: capture.url, options: .atomic)
+        preview = editedPreview
+        copyCapture()
+    }
+
     func captureArea() {
         guard !isCapturingArea else { return }
         isCapturingArea = true

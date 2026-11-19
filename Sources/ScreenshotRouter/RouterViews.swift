@@ -214,12 +214,20 @@ private struct RouterNavigation: View {
 
 private struct SaveView: View {
     @ObservedObject var model: RouterModel
+    @State private var editing: PendingCapture?
 
     var body: some View {
         Group {
             if let capture = model.pending.first, let image = model.preview {
                 HStack(spacing: 16) {
-                    PreviewWell(image: image, filename: capture.filename, model: model)
+                    VStack(spacing: 12) {
+                        PreviewWell(image: image, filename: capture.filename, model: model)
+                        Button {
+                            editing = capture
+                        } label: {
+                            Label(model.text("편집", "Edit"), systemImage: "pencil")
+                        }
+                    }
                     DestinationRail(model: model, fileExtension: capture.url.pathExtension.lowercased())
                         .frame(width: 264)
                 }
@@ -228,6 +236,10 @@ private struct SaveView: View {
             }
         }
         .padding(.horizontal, 24)
+        .sheet(item: $editing) { capture in
+            CaptureEditor(model: model, capture: capture)
+        }
+        .onChange(of: model.pending.first?.id) { _, _ in editing = nil }
     }
 }
 

@@ -5,7 +5,7 @@ final class RouterWindow: NSWindow {
     weak var model: RouterModel?
 
     override func sendEvent(_ event: NSEvent) {
-        guard isKeyWindow, event.type == .keyDown, let model else {
+        guard attachedSheet == nil, isKeyWindow, event.type == .keyDown, let model else {
             super.sendEvent(event)
             return
         }
@@ -47,7 +47,7 @@ final class RouterWindow: NSWindow {
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         let modifiers = event.modifierFlags.intersection([.command, .option, .control, .shift])
         // Only while this window is key: a folder panel on top keeps its own ⌘C.
-        if isKeyWindow, modifiers == .command, event.keyCode == 8, !(firstResponder is NSText), let model, !model.pending.isEmpty {
+        if attachedSheet == nil, isKeyWindow, modifiers == .command, event.keyCode == 8, !(firstResponder is NSText), let model, !model.pending.isEmpty {
             model.copyCapture()
             return true
         }

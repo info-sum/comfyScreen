@@ -5,11 +5,43 @@
 //  설명: 캡처 파일 필터링, 스테이징, 저장 및 폴더 목록 즉시 추가 동작을 검증하는 단위 테스트입니다.
 //
 
+import CoreGraphics
 import Foundation
 import Testing
 @testable import ScreenshotRouter
 
 struct CaptureTests {
+    @Test func editorCropsAndBlursAtTopLeftPixelCoordinates() throws {
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let context = try #require(CGContext(data: nil, width: 128, height: 128, bitsPerComponent: 8,
+                                             bytesPerRow: 0, space: colorSpace,
+                                             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.setFillColor(gray: 1, alpha: 1)
+        context.fill(CGRect(x: 0, y: 0, width: 128, height: 128))
+        context.setFillColor(gray: 0, alpha: 1)
+        context.fill(CGRect(x: 24, y: 100, width: 2, height: 4))
+        let source = try #require(context.makeImage())
+        let blurred = try #require(CaptureEdits.blurred(source))
+        let stroke = BlurStroke(points: [CGPoint(x: 25, y: 25)], width: 16)
+        let result = try #require(CaptureEdits.render(source, blurred: blurred, strokes: [stroke],
+                                                       crop: CGRect(x: 20, y: 20, width: 64, height: 80)))
+        #expect(result.width == 64)
+        #expect(result.height == 80)
+
+        func luminance(_ image: CGImage, x: Int, y: Int) throws -> UInt8 {
+            let pixel = try #require(image.cropping(to: CGRect(x: x, y: y, width: 1, height: 1)))
+            let buffer = try #require(CGContext(data: nil, width: 1, height: 1, bitsPerComponent: 8,
+                                                bytesPerRow: 4, space: colorSpace,
+                                                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+            buffer.draw(pixel, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+            return try #require(buffer.data).load(as: UInt8.self)
+        }
+
+        #expect(try luminance(source, x: 25, y: 25) == 0)
+        #expect(try luminance(result, x: 5, y: 5) > 180)
+        #expect(try luminance(result, x: 50, y: 55) == 255)
+    }
+
     @Test func localizedNamesRejectUnrelatedAndPartialFiles() {
         let names = ["Screenshot 2026.png": true, "스크린샷 2026.jpg": true, "Screenshot 2026.JPEG": true,
                      ".Screenshot 2026.png": false, "photo.png": false, "Screenshot 2026.png.partial": false,
